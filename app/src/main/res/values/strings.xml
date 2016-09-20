@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PitchMarker</string>
+    <string name="getlocation">Get Location</string>
+</resources>
