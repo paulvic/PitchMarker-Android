@@ -3,9 +3,12 @@ package com.example.paulv.pitchmarker;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +21,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements
@@ -36,9 +40,7 @@ public class MainActivity extends AppCompatActivity implements
     public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
             UPDATE_INTERVAL_IN_MILLISECONDS / 2;
 
-
     // Keys for storing activity state in the Bundle.
-
     protected final static String REQUESTING_LOCATION_UPDATES_KEY = "requesting-location-updates-key";
     protected final static String LOCATION_KEY = "location-key";
     protected final static String LAST_UPDATED_TIME_STRING_KEY = "last-updated-time-string-key";
@@ -65,12 +67,17 @@ public class MainActivity extends AppCompatActivity implements
     protected TextView mLatitudeTextView;
     protected TextView mLongitudeTextView;
     protected TextView mAccuracyTextView;
+    protected Button mSaveLocationButton;
+    protected TextView mSavedLocationsTextView;
+    protected ListView mSavedLocationsListView;
 
     // Labels.
     protected String mLatitudeLabel;
     protected String mLongitudeLabel;
     protected String mLastUpdateTimeLabel;
     protected String mAccuracyLabel;
+    protected String mSaveLocationLabel;
+    protected String mSavedLocationsLabel;
 
     /**
      * Tracks the status of the location updates request. Value changes when the user presses the
@@ -82,6 +89,10 @@ public class MainActivity extends AppCompatActivity implements
      * Time when the location was updated represented as a String.
      */
     protected String mLastUpdateTime;
+
+    protected ArrayAdapter<Location> mAdapter;
+    protected ArrayList<Location> mSavedLocations;
+    protected ArrayList<String> mSavedLocationsText;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -95,15 +106,28 @@ public class MainActivity extends AppCompatActivity implements
         mLongitudeTextView = (TextView) findViewById(R.id.longitude_text);
         mLastUpdateTimeTextView = (TextView) findViewById(R.id.last_update_time_text);
         mAccuracyTextView = (TextView) findViewById(R.id.accuracy_text);
+        mSavedLocationsListView = (ListView) findViewById(R.id.saved_locations_listView ) ;
+
+        mSaveLocationButton = (Button) findViewById(R.id.save_location_button);
+        mSavedLocationsTextView = (TextView) findViewById(R.id.saved_locations_text);
 
         // Set labels.
         mLatitudeLabel = getResources().getString(R.string.latitude_label);
         mLongitudeLabel = getResources().getString(R.string.longitude_label);
         mLastUpdateTimeLabel = getResources().getString(R.string.last_update_time_label);
         mAccuracyLabel = getResources().getString(R.string.accuracy_label);
+        mSaveLocationLabel = getResources().getString(R.string.save_location);
+        mSavedLocationsLabel = getResources().getString(R.string.saved_locations);
 
         mRequestingLocationUpdates = false;
         mLastUpdateTime = "";
+
+        mSavedLocationsText = new ArrayList<String>();
+        mSavedLocations = new ArrayList<Location>();
+
+        mAdapter = new ArrayAdapter<Location>(
+                this, android.R.layout.simple_list_item_1, mSavedLocations);
+        mSavedLocationsListView.setAdapter(mAdapter) ;
 
         // Update values using data stored in the Bundle.
         updateValuesFromBundle(savedInstanceState);
@@ -164,7 +188,7 @@ public class MainActivity extends AppCompatActivity implements
      * {@code ACCESS_COARSE_LOCATION} and {@code ACCESS_FINE_LOCATION}. These settings control
      * the accuracy of the current location. This sample uses ACCESS_FINE_LOCATION, as defined in
      * the AndroidManifest.xml.
-     * <p/>
+     *
      * When the ACCESS_FINE_LOCATION setting is specified, combined with a fast update
      * interval (5 seconds), the Fused Location Provider API returns location updates that are
      * accurate to within a few feet.
@@ -237,6 +261,20 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     /**
+     * Handles the Start Updates button and requests start of location updates. Does nothing if
+     * updates have already been requested.
+     */
+    public void saveLocationButtonHandler(View view) {
+        if (mCurrentLocation != null)
+        {
+            mSavedLocations.add(mCurrentLocation);
+            mSavedLocationsText.add(String.format("%f,%f", mCurrentLocation.getLatitude(),
+                    mCurrentLocation.getLongitude()));
+            updateUI();
+        }
+    }
+
+    /**
      * Updates the latitude, the longitude, and the last location time in the UI.
      */
     private void updateUI() {
@@ -248,6 +286,10 @@ public class MainActivity extends AppCompatActivity implements
                 mLastUpdateTime));
         mAccuracyTextView.setText(String.format("%s: %f", mAccuracyLabel,
                 mCurrentLocation.getAccuracy()));
+
+        mAdapter.notifyDataSetChanged();
+        mSavedLocationsTextView.setText(String.format("%s: %s", mSavedLocationsLabel,
+                TextUtils.join(", ", mSavedLocationsText)));
     }
 
     /**
